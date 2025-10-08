@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>College Canteen — Demo</title>
+    <meta name="description"
+        content="Single-file demo: register/login, item management, cart, orders, receipts, reports, simulated payments." />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1565c0;
+            --accent: #ffb300;
+            --muted: #666
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: Inter, system-ui, Arial;
+            margin: 0;
+            background: #f4f6fb;
+            color: #111
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.1rem
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: 0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 12px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 16px
+        }
+
+        .card {
+            background: white;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(10, 10, 10, 0.06)
+        }
+
+        .menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px
+        }
+
+        .item {
+            border-radius: 8px;
+            border: 1px solid #eee;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            flex-direction: column
+        }
+
+        .item img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: #ddd
+        }
+
+        .item-body {
+            padding: 8px;
+            flex: 1
+        }
+
+        .meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            margin-top: 6px
+        }
+
+        .cart-list {
+            list-style: none;
+            padding: 0;
+            margin: 0
+        }
+
+        .cart-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #eee
+        }
+
+        footer {
+            padding: 12px;
+            text-align: center;
+            color: var(--muted)
+        }
+
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .link {
+            background: transparent;
+            border: 0;
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div style="display:flex;gap:12px;align-items:center">
+            <img src="https://img.icons8.com/fluency/48/000000/restaurant.png" alt=""
+                style="width:40px;height:40px;border-radius:8px;background:white;padding:4px" />
+            <h1>College Canteen — Demo</h1>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+            <div id="userBadge" class="muted">Not logged in</div>
+            <button class="btn" onclick="openLogin()">Login</button>
+            <button class="btn" onclick="openRegister()">Register</button>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="grid">
+            <section>
+                <div class="card">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                            <h2 style="margin:0">Today's Menu</h2>
+                            <div class="muted">Browse items and add to cart</div>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center">
+                            <input id="search" placeholder="Search menu..." oninput="renderMenu()"
+                                style="padding:8px;border-radius:8px;border:1px solid #ddd" />
+                            <select id="filterCat" onchange="renderMenu()"
+                                style="padding:8px;border-radius:8px;border:1px solid #ddd">
+                                <option value="All">All</option>
+                                <option>Snacks</option>
+                                <option>Meals</option>
+                                <option>Drinks</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="menuWrap" class="menu" style="margin-top:12px"></div>
+                </div>
+
+                <div class="card" style="margin-top:12px">
+                    <h3 style="margin:0">Your Orders</h3>
+                    <div id="ordersList" style="margin-top:8px"></div>
+                </div>
+            </section>
+
+            <aside>
+                <div class="card">
+                    <h3 style="margin:0">Cart</h3>
+                    <ul id="cartList" class="cart-list" style="margin-top:8px"></ul>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+                        <strong>Total: ₹<span id="cartTotal">0</span></strong>
+                        <div>
+                            <button class="btn" onclick="openPayment()">Checkout</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ownerPanel" class="card" style="margin-top:12px;display:none">
+                    <h3 style="margin:0">Owner Panel</h3>
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+                        <button onclick="openAddItem()" class="btn">Add Item</button>
+                        <button onclick="openOwnerOrders()" class="btn">View Orders</button>
+                        <button onclick="openReports()" class="btn">Reports</button>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top:12px">
+                    <h3 style="margin:0">Quick Tips</h3>
+                    <div class="muted" style="margin-top:8px;font-size:0.95rem">Try the demo: owner email
+                        <strong>owner@canteen</strong>, pass <strong>owner123</strong>.</div>
+                </div>
+            </aside>
+        </div>
+
+        <div id="modals"></div>
+    </main>
+
+    <footer>
+        <small class="muted">Demo uses browser localStorage — no server required.</small>
+    </footer>
+
+    <script>
+        /* -----------------------------
+          Simple College Canteen Demo
+          - localStorage used as DB
+          - Roles: student, owner
+          - Owner can add/edit/delete items
+          - Users can add to cart, checkout (simulated)
+          - Receipts downloadable
+          - Reports shown with Chart.js
+        ------------------------------*/
+
+        const DB = {
+            get(k) { return JSON.parse(localStorage.getItem(k) || 'null') },
+            set(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
+        }
+
+        function initData() {
+            if (!DB.get('users')) {
+                DB.set('users', [
+                    { id: 1, name: 'Owner', email: 'owner@canteen', password: 'owner123', role: 'owner' },
+                    { id: 2, name: 'Student', email: 'student@college', password: 'stud123', role: 'student' }
+                ]);
+            }
+            if (!DB.get('items')) {
+                DB.set('items', [
+                    { id: 101, name: 'Veg Sandwich', desc: 'Toasted sandwich', price: 40, category: 'Snacks', img: 'https://images.unsplash.com/photo-1604908177223-7b73d3f3e9e1?q=80&w=800&auto=format&fit=crop&crop=faces' },
+                    { id: 102, name: 'Masala Dosa', desc: 'Crispy dosa with chutney', price: 70, category: 'Meals', img: 'https://images.unsplash.com/photo-1604908554021-1f2b90d3b6b7?q=80&w=800&auto=format&fit=crop&crop=faces' },
+                    { id: 103, name: 'Lemon Tea', desc: 'Hot lemon tea', price: 15, category: 'Drinks', img: 'https://images.unsplash.com/photo-1509048531978-3b0a6b2a9f7a?q=80&w=800&auto=format&fit=crop&crop=faces' }
+                ]);
+            }
+            if (!DB.get('orders')) DB.set('orders', []);
+            if (!DB.get('cart')) DB.set('cart', []);
+            if (!DB.get('currentUser')) DB.set('currentUser', null);
+        }
+        initData();
+
+        /* UI helpers */
+        function showModal(inner) {
+            document.getElementById('modals').innerHTML = `<div style="position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999">${inner}</div>`;
+        }
+        function closeModal() { document.getElementById('modals').innerHTML = '' }
+
+        /* Auth */
+        function openRegister() {
+            const html = `<div class="card" style="max-width:480px">
+    <h3>Register</h3>
+    <label>Name<input id="rname"></label>
+    <label>Email<input id="remail" type="email"></label>
+    <label>Password<input id="rpass" type="password"></label>
+    <label>Role<select id="rrole"><option value="student">Student</option><option value="owner">Owner</option></select></label>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="register()">Create</button><button onclick="closeModal()">Cancel</button>
+    </div></div>`;
+            showModal(html);
+        }
+        function register() {
+            const name = document.getElementById('rname').value.trim();
+            const email = document.getElementById('remail').value.trim();
+            const pass = document.getElementById('rpass').value;
+            const role = document.getElementById('rrole').value;
+            if (!name || !email || !pass) { alert('Fill all fields'); return }
+            const users = DB.get('users') || [];
+            if (users.find(u => u.email === email)) { alert('Email exists'); return }
+            const id = Date.now();
+            users.push({ id, name, email, password: pass, role });
+            DB.set('users', users);
+            alert('Registered — please login');
+            closeModal();
+        }
+        function openLogin() {
+            const html = `<div class="card" style="max-width:420px">
+    <h3>Login</h3>
+    <label>Email<input id="lemail" type="email"></label>
+    <label>Password<input id="lpass" type="password"></label>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="login()">Login</button><button onclick="closeModal()">Cancel</button>
+    </div></div>`;
+            showModal(html);
+        }
+        function login() {
+            const email = document.getElementById('lemail').value.trim();
+            const pass = document.getElementById('lpass').value;
+            const users = DB.get('users') || [];
+            const u = users.find(x => x.email === email && x.password === pass);
+            if (!u) { alert('Invalid credentials'); return }
+            DB.set('currentUser', u);
+            closeModal(); renderAll();
+        }
+        function logout() { DB.set('currentUser', null); renderAll(); }
+
+        /* Menu rendering */
+        function renderMenu() {
+            const items = DB.get('items') || [];
+            const q = document.getElementById('search').value.toLowerCase();
+            const cat = document.getElementById('filterCat').value;
+            const list = items.filter(it => {
+                if (cat !== 'All' && it.category !== cat) return false;
+                if (q && !(it.name.toLowerCase().includes(q) || (it.desc || '').toLowerCase().includes(q))) return false;
+                return true;
+            });
+            const wrap = document.getElementById('menuWrap');
+            if (!wrap) return;
+            wrap.innerHTML = list.map(it => `<div class="item card">
+    <img src="${it.img || 'https://via.placeholder.com/400x200'}" alt="${it.name}">
+    <div class="item-body">
+      <h4 style="margin:0">${it.name}</h4>
+      <div class="muted" style="font-size:0.95rem">${it.desc || ''}</div>
+      <div class="meta"><strong>₹${it.price}</strong><div><button class="btn" onclick='addToCart(${it.id})'>Add</button>
+      ${isOwner() ? ` <button class="link" onclick='editItem(${it.id})'>Edit</button> <button class="link" onclick='deleteItem(${it.id})'>Delete</button>` : ''}</div></div>
+    </div></div>`).join('');
+        }
+
+        /* Cart */
+        function addToCart(id) {
+            const items = DB.get('items') || [];
+            const it = items.find(x => x.id === id);
+            if (!it) return alert('Item not found');
+            const cart = DB.get('cart') || [];
+            const existing = cart.find(c => c.id === id);
+            if (existing) existing.qty++;
+            else cart.push({ id: it.id, name: it.name, price: it.price, qty: 1 });
+            DB.set('cart', cart);
+            renderCart();
+        }
+        function changeQty(id, delta) {
+            const cart = DB.get('cart') || [];
+            const it = cart.find(c => c.id === id);
+            if (!it) return;
+            it.qty = Math.max(1, it.qty + delta);
+            DB.set('cart', cart); renderCart();
+        }
+        function removeFromCart(id) {
+            let cart = DB.get('cart') || [];
+            cart = cart.filter(c => c.id !== id); DB.set('cart', cart); renderCart();
+        }
+        function renderCart() {
+            const cart = DB.get('cart') || [];
+            const el = document.getElementById('cartList');
+            el.innerHTML = cart.map(c => `<li><div><strong>${c.name}</strong><div class="muted">₹${c.price} x ${c.qty}</div></div>
+    <div><button onclick="changeQty(${c.id},-1)">-</button> <button onclick="changeQty(${c.id},1)">+</button> <button onclick="removeFromCart(${c.id})">Remove</button></div></li>`).join('');
+            const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+            document.getElementById('cartTotal').textContent = total;
+        }
+
+        /* Payment & Orders */
+        function openPayment() {
+            const user = DB.get('currentUser');
+            if (!user) { if (confirm('Please login to checkout. Login now?')) openLogin(); return; }
+            const cart = DB.get('cart') || [];
+            if (cart.length === 0) { alert('Cart empty'); return; }
+            const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+            const html = `<div class="card" style="max-width:520px">
+    <h3>Checkout</h3>
+    <div class="muted">Total: ₹${total}</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" onclick="simulatePay('GPay')">GPay</button>
+      <button class="btn" onclick="simulatePay('PhonePe')">PhonePe</button>
+      <button class="btn" onclick="simulatePay('Paytm')">Paytm</button>
+    </div>
+    <div style="margin-top:10px"><button onclick="closeModal()">Cancel</button></div>
+  </div>`;
+            showModal(html);
+        }
+        function simulatePay(method) {
+            const cart = DB.get('cart') || [];
+            const user = DB.get('currentUser');
+            const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+            const orders = DB.get('orders') || [];
+            const orderId = Date.now();
+            const order = { id: orderId, userId: user.id, userName: user.name, items: cart, total, method, createdAt: new Date().toISOString(), status: 'Paid' };
+            orders.push(order); DB.set('orders', orders); DB.set('cart', []); closeModal(); renderAll();
+            alert('Payment successful — order placed. Order #' + orderId);
+        }
+
+        /* Orders and receipts */
+        function renderOrders() {
+            const user = DB.get('currentUser');
+            const wrap = document.getElementById('ordersList');
+            if (!wrap) return;
+            if (!user) { wrap.innerHTML = '<div class="muted">Login to view your orders</div>'; return; }
+            const orders = (DB.get('orders') || []).filter(o => o.userId === user.id);
+            if (orders.length === 0) wrap.innerHTML = '<div class="muted">No orders yet</div>';
+            else wrap.innerHTML = orders.map(o => `<div class="card" style="margin-bottom:8px;padding:10px"><strong>Order #${o.id}</strong><div class="muted">${new Date(o.createdAt).toLocaleString()}</div>
+    <div>Items: ${o.items.map(i => i.name + ' x' + i.qty).join(', ')}</div><div><strong>₹${o.total}</strong> — ${o.method}</div>
+    <div style="margin-top:8px"><button onclick="downloadReceipt(${o.id})">Download Receipt</button></div></div>`).join('');
+        }
+        function downloadReceipt(id) {
+            const orders = DB.get('orders') || [];
+            const o = orders.find(x => x.id === id);
+            if (!o) return alert('Order not found');
+            let text = `Receipt - Order #${o.id}\nDate: ${new Date(o.createdAt).toLocaleString()}\nCustomer: ${o.userName}\n\nItems:\n`;
+            o.items.forEach(it => text += `${it.name} x ${it.qty} -> ₹${it.price * it.qty}\n`);
+            text += `\nTotal: ₹${o.total}\nPayment: ${o.method}\n`;
+            const blob = new Blob([text], { type: 'text/plain' }); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `receipt_${o.id}.txt`; a.click(); URL.revokeObjectURL(url);
+        }
+
+        /* Owner: add/edit/delete items and view all orders */
+        function isOwner() { const u = DB.get('currentUser'); return u && u.role === 'owner'; }
+        function openAddItem() {
+            const html = `<div class="card" style="max-width:640px"><h3>Add Item</h3>
+    <label>Name<input id="itName"></label>
+    <label>Description<textarea id="itDesc"></textarea></label>
+    <div style="display:flex;gap:8px">
+      <label style="flex:1">Price<input id="itPrice" type="number"></label>
+      <label style="flex:1">Category<select id="itCat"><option>Snacks</option><option>Meals</option><option>Drinks</option></select></label>
+    </div>
+    <label>Image<input id="itImg" type="file" accept="image/*"></label>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveNewItem()">Save</button><button onclick="closeModal()">Cancel</button></div></div>`;
+            showModal(html);
+        }
+        function saveNewItem() {
+            const name = document.getElementById('itName').value.trim();
+            const desc = document.getElementById('itDesc').value.trim();
+            const price = Number(document.getElementById('itPrice').value || 0);
+            const cat = document.getElementById('itCat').value;
+            const file = document.getElementById('itImg').files[0];
+            if (!name || !price) return alert('Name and price required');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    persistItem(name, desc, price, cat, e.target.result);
+                    closeModal(); renderAll();
+                }
+                reader.readAsDataURL(file);
+            } else { persistItem(name, desc, price, cat, ''); closeModal(); renderAll(); }
+        }
+        function persistItem(name, desc, price, cat, img) {
+            const items = DB.get('items') || [];
+            const id = Date.now();
+            items.push({ id, name, desc, price, category: cat, img });
+            DB.set('items', items);
+        }
+        function editItem(id) {
+            const items = DB.get('items') || [];
+            const it = items.find(x => x.id === id); if (!it) return;
+            const html = `<div class="card" style="max-width:640px"><h3>Edit Item</h3>
+    <label>Name<input id="eitName" value="${escapeHtml(it.name)}"></label>
+    <label>Description<textarea id="eitDesc">${escapeHtml(it.desc || '')}</textarea></label>
+    <div style="display:flex;gap:8px">
+      <label style="flex:1">Price<input id="eitPrice" type="number" value="${it.price}"></label>
+      <label style="flex:1">Category<select id="eitCat"><option${it.category === 'Snacks' ? ' selected' : ''}>Snacks</option><option${it.category === 'Meals' ? ' selected' : ''}>Meals</option><option${it.category === 'Drinks' ? ' selected' : ''}>Drinks</option></select></label>
+    </div>
+    <label>Image<input id="eitImg" type="file" accept="image/*"></label>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" onclick="saveEdit(${it.id})">Save</button><button onclick="closeModal()">Cancel</button></div></div>`;
+            showModal(html);
+        }
+        function saveEdit(id) {
+            const name = document.getElementById('eitName').value.trim();
+            const desc = document.getElementById('eitDesc').value.trim();
+            const price = Number(document.getElementById('eitPrice').value || 0);
+            const cat = document.getElementById('eitCat').value;
+            const file = document.getElementById('eitImg').files[0];
+            const items = DB.get('items') || [];
+            const idx = items.findIndex(x => x.id === id);
+            if (idx < 0) return;
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    items[idx] = { ...items[idx], name, desc, price, category: cat, img: e.target.result };
+                    DB.set('items', items); closeModal(); renderAll();
+                }
+                reader.readAsDataURL(file);
+            } else {
+                items[idx] = { ...items[idx], name, desc, price, category: cat };
+                DB.set('items', items); closeModal(); renderAll();
+            }
+        }
+        function deleteItem(id) {
+            if (!confirm('Delete item?')) return;
+            let items = DB.get('items') || [];
+            items = items.filter(x => x.id !== id); DB.set('items', items); renderAll();
+        }
+        function openOwnerOrders() {
+            if (!isOwner()) return alert('Owner only');
+            const orders = DB.get('orders') || [];
+            const html = `<div class="card" style="max-width:900px"><h3>All Orders (${orders.length})</h3>
+    ${orders.map(o => `<div style="border-bottom:1px solid #eee;padding:8px"><strong>Order #${o.id}</strong> <div class="muted">${new Date(o.createdAt).toLocaleString()}</div>
+    <div>By: ${o.userName}</div><div>Items: ${o.items.map(i => i.name + ' x' + i.qty).join(', ')}</div><div><strong>₹${o.total}</strong> — ${o.method}</div>
+    <div style="margin-top:6px"><button onclick="showReceipt(${o.id})">Show Receipt</button></div></div>`).join('')}
+    <div style="margin-top:8px"><button onclick="closeModal()">Close</button></div></div>`;
+            showModal(html);
+        }
+        function showReceipt(id) {
+            const orders = DB.get('orders') || []; const o = orders.find(x => x.id === id); if (!o) return;
+            const html = `<div class="card" style="max-width:480px"><h3>Receipt — Order #${o.id}</h3>
+    <div class="muted">${new Date(o.createdAt).toLocaleString()}</div>
+    <div style="margin-top:8px">${o.items.map(i => `<div style="display:flex;justify-content:space-between"><div>${i.name} x ${i.qty}</div><div>₹${i.price * i.qty}</div></div>`).join('')}</div>
+    <hr/><div style="display:flex;justify-content:space-between"><strong>Total</strong><strong>₹${o.total}</strong></div>
+    <div style="margin-top:10px">Payment: ${o.method}</div>
+    <div style="margin-top:10px"><button onclick="downloadReceipt(${o.id})">Download</button> <button onclick="closeModal()">Close</button></div></div>`;
+            showModal(html);
+        }
+
+        /* Reports */
+        function openReports() {
+            if (!isOwner()) return alert('Owner only');
+            const orders = DB.get('orders') || [];
+            // compute daily for last 30 days
+            const map = {};
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const key = d.toISOString().slice(0, 10); map[key] = 0;
+            }
+            orders.forEach(o => {
+                const key = o.createdAt.slice(0, 10);
+                if (map[key] !== undefined) map[key] += o.total;
+            });
+            const labels = Object.keys(map);
+            const data = labels.map(k => map[k]);
+            const html = `<div class="card" style="max-width:900px"><h3>Revenue — last 30 days</h3><canvas id="chart"></canvas><div style="margin-top:8px"><button onclick="closeModal()">Close</button></div></div>`;
+            showModal(html);
+            setTimeout(() => {
+                const ctx = document.getElementById('chart').getContext('2d');
+                new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Revenue (₹)', data }] }, options: { plugins: { legend: { display: false } } } });
+            }, 50);
+        }
+
+        /* Utilities */
+        function escapeHtml(s) { return (s || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }
+
+        /* Initial render */
+        function renderCurrentUser() {
+            const u = DB.get('currentUser');
+            const badge = document.getElementById('userBadge');
+            if (!u) badge.textContent = 'Not logged in';
+            else { badge.textContent = `${u.name} (${u.role})`; }
+            document.getElementById('ownerPanel').style.display = (u && u.role === 'owner') ? 'block' : 'none';
+        }
+        function renderAll() { renderMenu(); renderCart(); renderOrders(); renderCurrentUser(); }
+        renderAll();
+
+    </script>
+</body>
+
+</html>
